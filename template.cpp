@@ -12,7 +12,7 @@
 #define WALL_LEFT_BOTTOM_STRING "┗"
 #define SNAKE_STRING "■"
 #define APPLE_STRING "●"
-#define FRAME_RATE 60
+#define FRAME_RATE 10
 #define MOVE_DELAY_MS (1000 / FRAME_RATE)
 
 int x = BOARD_SIZE / 2;
@@ -90,9 +90,14 @@ void restrictInScreen() {
         y = console::SCREEN_HEIGHT - 1;
 }
 
-void drawStar() {
-    // x, y 위치에 *을 그린다.
+void drawSnake() {
+    // 뱀의 머리를 그린다.
     console::draw(x, y, SNAKE_STRING);
+
+    // 뱀의 꼬리를 그린다.
+    for (int i = 0; i < tail_length; ++i) {
+        console::draw(tailX[i], tailY[i], SNAKE_STRING);
+    }
 }
 
 bool appleCreated = false; // 사과가 생성되었는지 여부를 나타내는 변수
@@ -110,28 +115,37 @@ void createApple() {
 }
 
 void moveSnake() {
+    // 뱀의 꼬리 위치 갱신
+    for (int i = tail_length - 1; i > 0; --i) {
+        tailX[i] = tailX[i - 1];
+        tailY[i] = tailY[i - 1];
+    }
+    tailX[0] = x;
+    tailY[0] = y;
+
     // 뱀의 머리 위치를 이동
     x += dx;
     y += dy;
-    if (tail_length > 0) {
-        for (int i = tail_length - 1; i > 0; --i) {
-            tailX[i] = tailX[i - 1];
-            tailY[i] = tailY[i - 1];
-        }
-        tailX[0] = x;
-        tailY[0] = y;
+
+    // 뱀이 벽에 닿았을 경우 게임 종료
+    if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) {
+        console::draw((BOARD_SIZE - 9) / 2, BOARD_SIZE / 2, "Game Over!");
+        exit(0);
     }
+
+    // 뱀이 자기 몸에 닿았을 경우 게임 종료
+    for (int i = 0; i < tail_length; ++i) {
+        if (x == tailX[i] && y == tailY[i]) {
+            console::draw((BOARD_SIZE - 9) / 2, BOARD_SIZE / 2, "Game Over!");
+            exit(0);
+        }
+   }
 
     // 뱀의 머리가 사과를 먹었을 경우
     if (x == x_apple && y == y_apple) {
         appleCreated = false; // 사과 생성 상태 초기화
         tail_length++; // 꼬리 길이 증가
-    }
-
-    if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) {
-        // 벽에 닿았으므로 게임 종료
-        console::draw((BOARD_SIZE - 9) / 2, BOARD_SIZE / 2, "Game Over!");
-        exit(0); // 프로그램 종료
+        createApple(); // 새로운 사과 생성
     }
 }
 
@@ -140,6 +154,7 @@ void game() {
     console::init();
 
     printBoard();
+    createApple(); // 게임 시작 시 사과 생성
 
     auto lastFrameTime = clock();
 
@@ -158,14 +173,8 @@ void game() {
         eraseSnake(x, y);
         handleInput();
         restrictInScreen();
-        drawStar();
-        createApple();
         moveSnake();
-
-        if (x == x_apple && y == y_apple) {
-            appleCreated = false;
-            tail_length++;
-        }
+        drawSnake();
 
         // 화면을 갱신하고 다음 프레임까지 대기
         console::wait();
