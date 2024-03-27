@@ -12,7 +12,7 @@
 #define WALL_LEFT_BOTTOM_STRING "┗"
 #define SNAKE_STRING "■"
 #define APPLE_STRING "●"
-#define FRAME_RATE 10
+#define FRAME_RATE 60
 #define MOVE_DELAY_MS (1000 / FRAME_RATE)
 
 int x = BOARD_SIZE / 2;
